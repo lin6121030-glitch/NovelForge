@@ -1,0 +1,29 @@
+{
+  "name": "novelforge",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AI辅助长篇小说创作CLI工具",
+  "bin": {
+    "novel": "src/cli/index.js"
+  },
+  "scripts": {
+    "start": "node src/cli/index.js"
+  },
+  "keywords": [
+    "novel",
+    "ai",
+    "writing",
+    "agent",
+    "knowledge-graph"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "inquirer": "^10.0.0",
+    "openai": "^6.34.0"
+  }
+}
