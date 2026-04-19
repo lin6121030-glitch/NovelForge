@@ -5,3 +5,5 @@ node_modules/
 .env.local
 my-idea/
 .novelforge.env
+books/
+test-brief.md
