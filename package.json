@@ -2,19 +2,38 @@
   "name": "novelforge",
   "version": "1.0.0",
   "type": "module",
-  "description": "AI辅助长篇小说创作CLI工具",
+  "description": "AI assisted long-form novel writing library and CLI tool",
+  "main": "lib/index.js",
   "bin": {
-    "novel": "src/cli/index.js"
+    "novel": "bin/novel.js"
   },
+  "exports": {
+    ".": "lib/index.js",
+    "./agents": "lib/agents/agent.js",
+    "./kg": "lib/kg/kg-files.js",
+    "./llm": "lib/llm/llm.js",
+    "./utils": "lib/utils/parser.js",
+    "./cli": "lib/cli/index.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "start": "node src/cli/index.js"
+    "start": "node bin/novel.js",
+    "test": "node --test",
+    "prepublishOnly": "npm run test"
   },
   "keywords": [
     "novel",
     "ai",
     "writing",
     "agent",
-    "knowledge-graph"
+    "knowledge-graph",
+    "cli",
+    "library"
   ],
   "license": "MIT",
   "engines": {
