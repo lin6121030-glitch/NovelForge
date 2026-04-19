@@ -3,3 +3,5 @@ node_modules/
 *.log
 .DS_Store
 .env.local
+my-idea/
+.novelforge.env
