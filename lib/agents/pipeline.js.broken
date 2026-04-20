@@ -4,7 +4,7 @@ import { initLLM, chat } from '../llm/llm.js';
 import { addToHistory, getHistory, clearHistory } from '../llm/multichat.js';
 
 export class AgentPipeline {
-  constructor(projectDir, projectName = 'novel') {
+  constructor(projectDir, projectName = '小说') {
     this.projectDir = projectDir;
     this.projectName = projectName;
     this.kg = null;
@@ -25,24 +25,24 @@ export class AgentPipeline {
   
   async init() {
     this.kg = loadAll(this.projectDir);
-    console.log('KnowledgeGraph loaded:', this.projectName);
+    console.log('✓ KnowledgeGraph loaded:', this.projectName);
   }
   
   async planner(chapter) {
-    console.log('Planner: Planning chapter...');
+    console.log('📋 Planner: 规划本章...');
     
     const outline = loadOutline(this.projectDir);
     this.task = parseCurrentTaskFromOutline(outline, chapter);
     this.context = generateAgentContext(this.kg, this.task, this.projectName);
     
-    console.log('Planning complete');
+    console.log('✓ 已规划');
     return this.task;
   }
   
   async composer(task) {
-    console.log('Composer: Organizing context...');
+    console.log('📋 Composer: 整理上下文...');
     
-    console.log('Context organized');
+    console.log('✓ 上下文已整理');
     return this.context;
   }
   
@@ -60,6 +60,7 @@ export class AgentPipeline {
     
     // Extract current chapter outline
     const chapterNum = chapterInfo?.startChapter || 1;
+    const prevChapter = chapterNum - 1;
     const currentOutline = extractChapterOutline(kgFiles.outline, chapterNum);
     
     // Set context data
@@ -72,6 +73,7 @@ export class AgentPipeline {
       constraints: kgFiles.constraints || '',
       outline: currentOutline || '',
       chapterNum: chapterNum,
+      // previousValues: Object.keys(previousValues).length > 0 ? JSON.stringify(previousValues, null, 2) : 'No previous values',
       chapterInfo: chapterInfo ? `Current chapter: ${chapterInfo.chapterRange || chapterInfo.startChapter + '-' + chapterInfo.endChapter + 'chapters'}\n> Event: ${chapterInfo.title || ''}` : ''
     });
     
@@ -82,14 +84,14 @@ export class AgentPipeline {
     
     let content = result.finalResponse || '';
     
-    console.log('Content generated');
+    console.log('Direct content generated');
     return content;
   }
   
   async observer(draft) {
-    console.log('Observer: Extracting facts...');
+    console.log('📋 Observer: 提取事实...');
     
-    const observerPrompt = `Extract key facts from the following content (characters, places, items, events, state changes):\n\n${draft}`;
+    const observerPrompt = `从以下正文中提取关键事实（角色、地点、物品、事件、状态变化）：\n\n${draft}`;
     
     this.conversationHistory.push({ role: 'user', content: observerPrompt });
     
@@ -98,18 +100,18 @@ export class AgentPipeline {
     
     this.conversationHistory.push({ role: 'assistant', content: facts });
     
-    console.log('Facts extracted');
+    console.log('✓ 事实已提取');
     return facts;
   }
   
   async auditor(draft, facts) {
-    console.log('Auditor: Auditing...');
+    console.log('📋 Auditor: 审计中...');
     
     if (!this.context) {
       this.context = generateAgentContext(this.kg, this.task, this.projectName);
     }
     
-    let auditorPrompt = `Audit the following content based on world rules, constraints, factual contradictions, and AI-like patterns:\n\n## Content\n${draft}\n\n## Extracted Facts\n${facts}\n`;
+    let auditorPrompt = `基于以下内容进行审计（世界观规则、约束、事实矛盾、AI味）：\n\n## 正文\n${draft}\n\n## 提取的事实\n${facts}\n`;
     
     this.conversationHistory.push({ role: 'user', content: auditorPrompt });
     
@@ -118,9 +120,9 @@ export class AgentPipeline {
     
     this.conversationHistory.push({ role: 'assistant', content: report });
     
-    const passed = !report.includes('') && !report.toLowerCase().includes('issue');
+    const passed = !report.includes('❌') && !report.toLowerCase().includes('issue');
     
-    console.log(passed ? 'Audit passed' : 'Needs revision');
+    console.log(passed ? 'Direct content verified' : 'Needs revision');
     return { report, passed };
   }
 
@@ -202,6 +204,41 @@ ${draft}`;
     console.log(`Values saved to: ${valuesFile}`);
   }
 
+  async saveChapterValues(chapter, values) {
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    // Create chapter-specific folder
+    const chapterDir = path.join(this.projectDir, 'story', `chapter-${chapter}`);
+    if (!fs.existsSync(chapterDir)) {
+      fs.mkdirSync(chapterDir, { recursive: true });
+    }
+    
+    // Save values as markdown
+    const valuesFile = path.join(chapterDir, 'values.md');
+    const valuesMd = this.formatValuesAsMarkdown(chapter, values);
+    
+    fs.writeFileSync(valuesFile, valuesMd);
+    console.log(`Values saved to: ${valuesFile}`);
+  }
+
+  formatValuesAsMarkdown(chapter, values) {
+    let markdown = `# Chapter ${chapter} Numerical Data\n\n`;
+    markdown += `## Extracted Time\n${new Date().toISOString()}\n\n`;
+    
+    for (const [category, data] of Object.entries(values)) {
+      if (typeof data === 'object' && data !== null) {
+        markdown += `## ${category.charAt(0).toUpperCase() + category.slice(1)}\n`;
+        for (const [key, value] of Object.entries(data)) {
+          markdown += `- ${key}: ${value}\n`;
+        }
+        markdown += '\n';
+      }
+    }
+    
+    return markdown;
+  }
+
   parseValuesFromMarkdown(markdown) {
     const values = {};
     const lines = markdown.split('\n');
@@ -236,10 +273,10 @@ ${draft}`;
     console.log('\n---\n');
     
     // Read previous chapter values
-    const previousValues = await this.values(chapter);
+    // const previousValues = await this.values(chapter);
     console.log('\n---\n');
     
-    const draft = await this.writer(task, this.kg, this.task, previousValues);
+    const draft = await this.writer(task, this.kg, this.task, {});
     console.log('Content generated (' + draft.length + ' characters)\n');
     console.log('\n---\n');
     
@@ -249,21 +286,74 @@ ${draft}`;
     const { report, passed } = await this.auditor(draft, facts);
     console.log('\n---\n');
     
-    // Extract and save current chapter values
-    const currentValues = await this.values(chapter, draft);
-    
-    console.log('\n=== Generation complete ===');
-    
-    return {
-      chapter,
-      task,
-      context,
-      draft,
-      facts,
-      report,
-      passed,
-      previousValues,
-      currentValues
-    };
   }
+}
+    
+return markdown;
+}
+
+parseValuesFromMarkdown(markdown) {
+const values = {};
+const lines = markdown.split('\n');
+let currentCategory = '';
+    
+for (const line of lines) {
+  if (line.startsWith('## ')) {
+    currentCategory = line.replace('## ', '').toLowerCase();
+    values[currentCategory] = {};
+  } else if (line.startsWith('- ') && currentCategory) {
+    const [key, ...valueParts] = line.replace('- ', '').split(': ');
+    const value = valueParts.join(': ');
+    if (key && value) {
+      values[currentCategory][key] = value;
+    }
+  }
+}
+    
+return values;
+}
+
+async run(chapter) {
+console.log(`\n=== Starting chapter ${chapter} generation ===\n`);
+console.log('Project:', this.projectName, '\n');
+    
+this.clearHistory();
+    
+const task = await this.planner(chapter);
+console.log('\n---\n');
+    
+const context = await this.composer(task);
+console.log('\n---\n');
+    
+// Read previous chapter values
+// const previousValues = await this.values(chapter);
+console.log('\n---\n');
+    
+const draft = await this.writer(task, this.kg, this.task, {});
+console.log('Content generated (' + draft.length + ' characters)\n');
+console.log('\n---\n');
+    
+const facts = await this.observer(draft);
+console.log('\n---\n');
+    
+const { report, passed } = await this.auditor(draft, facts);
+console.log('\n---\n');
+    
+// Extract and save current chapter values
+// const currentValues = await this.values(chapter, draft);
+    
+console.log('\n=== Generation complete ===');
+    
+return {
+  chapter,
+  task,
+  context,
+  draft,
+  facts,
+  report,
+  passed,
+  previousValues: {},
+  currentValues: {}
+};
+}
 }
