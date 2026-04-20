@@ -45,9 +45,10 @@ async function testConfigSchemeA() {
   console.log('支持记忆:', current2.supportsMemory);
   console.log('应该使用: MiniMax-M2-her');
   
-  // 测试3: OPENAI模式强制
-  console.log('\n=== 测试3: OPENAI模式强制 ===');
+  // 测试3: PRIMARY模型 + OPENAI模式
+  console.log('\n=== 测试3: PRIMARY模型 + OPENAI模式 ===');
   
+  process.env.LLM_DEFAULT_MODEL = 'PRIMARY';  // Reset to PRIMARY
   process.env.LLM_API_MODE = 'OPENAI';
   
   const executor3 = new ConversationExecutor(chat);
