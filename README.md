@@ -22,84 +22,102 @@ LLM_MODEL=MiniMax-M2.7
 ## 使用
 
 ```bash
-# 构建KG（解析作者设定）
-node src/cli/index.js build 我的小说
+# 创建书籍（基于设定文件）
+node bin/novel.js build --title "书名" --brief "设定文件.md"
 
 # 生成章节
-node src/cli/index.js write 我的小说 -c 1
+node bin/novel.js write 1
 
 # 查看状态
-node src/cli/index.js status 我的小说
-```
-
-## KG解析文件说明
-
-运行 `novel build` 后，会在 `novelforge/` 目录生成以下文件：
-
-| 文件 | 内容 | 使用时机 |
-|------|------|----------|
-| world-rules.md | 世界观基石 | 写入世界观设定时 |
-| constraints.md | 创作规则 | 检查约束时 |
-| outline.md | 书的大纲 | 确定章节范围时 |
-| style.md | 风格与样例 | 写作时参考风格 |
-| characters.md | 人物关系 | 创作角色时参考 |
-| factions.md | 组织势力 | 涉及组织时参考 |
-| locations.md | 地理环境 | 场景描写时参考 |
-| other.md | 其他内容 | 特殊设定参考 |
-
-这些文件在 `novel write` 时会被加载，注入到LLM上下文中。
-
-## 项目结构
-
-```
-项目名/
-├── world设定.md        # 作者原始设定（8个区块）
-├── novelforge/        # 静态KG（由build命令生成）
-└── chapters/        # 生成的章节
+node bin/novel.js status
 ```
 
 ## 设定文件格式
 
+新的设定文件格式支持三个部分：文风库、设定库、故事大纲
+
+```markdown
+==文风库start==
+## 开局
+> 文风内容示例...
+
+## 日常
+> 文风内容示例...
+==文风库end==
+
+==设定库start==
+## 人物
+### 主角名
+- 身份定义：xxx
+- 初始修为：xxx
+- 性格核心：xxx
+
+###配角名
+- 身份定义：xxx
+-xx: xxx
+==设定库end==
+
+==故事大纲start==
+# 第1章
+- 标题：章节标题
+- 文风：开局
+- 实体：涉及的角色/势力
+- 目标：章节目标
+- 关键情节：
+  - 情节1
+  - 情节2
+
+# 第2章
+- 标题：xxx
+- 文风：日常
+- 实体：xxx
+- 目标：xxx
+- 关键情节：
+  - xxx
+==故事大纲end==
 ```
-==世界观基石start==
-（用户随便写）
-==世界观基石end==
 
-==创作规则start==
-（用户随便写）
-==创作规则end==
+### 格式说明
 
-==书的大纲start==
-（用户随便写）
-==书的大纲end==
+**文风库**：
+- `## 文风名` 作为小节标题
+- 内容为示例文本，供LLM参考该文风特点
 
-==风格与样例start==
-（用户随便写）
-==风格与样例end==
+**设定库**：
+- `## 大类`（如人物、装备、势力、地点等）
+- `### 具体名`（每个独立设定）
+- `- key：value` 格式的属性，key和value都是动态的
 
-==人物关系start==
-（用户随便写）
-==人物关系end==
+**故事大纲**：
+- `# 第N章` 标记章节
+- `- 标题：`、`- 文风：`、`- 实体：`、`- 目标：`、`- 关键情节：` 为固定字段
+- 关键情节支持多行子项缩进格式
 
-==组织势力start==
-（用户随便写）
-==组织势力end==
+## 项目结构
 
-==地理环境start==
-（用户随便写）
-==地理环境end==
-
-==其他内容start==
-（用户随便写）
-==其他内容end==
+```
+books/
+└── 书名/
+    ├── 文风库/
+    │   ├── 开局.md
+    │   ├── 日常.md
+    │   └── 其他文风.md
+    ├── 设定库/
+    │   ├── 人物.md
+    │   ├── 装备.md
+    │   ├── 势力.md
+    │   └── 地点.md
+    └── 大纲库/
+        ├── 第1章.md
+        ├── 第2章.md
+        └── 第N章.md
 ```
 
 ## CLI命令
 
-- `novel init [名称]` - 初始化项目
-- `novel build [项目]` - 构建KG
-- `novel write [项目] -c [章节]` - 生成章节
-- `novel status [项目]` - 查看项目状态
-- `novel list [项目]` - 列出章节
-- `novel read [项目] [章节]` - 读取章节
+- `novel build --title "书名" --brief "设定文件.md"` - 创建书籍项目
+- `novel write [章节号]` - 生成章节
+- `novel status` - 查看项目状态
+- `novel list` - 列出章节
+- `novel read [章节号]` - 读取章节
 - `novel config --set KEY=value` - 配置LLM
